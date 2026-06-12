@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: incident-worker
+  namespace: incident-dashboard
+spec:
+  replicas: 4
+  selector:
+    matchLabels: { app: incident-worker }
+  template:
+    metadata:
+      labels: { app: incident-worker }
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/YOUR_ORG/incident-api:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: incident-config }
+            - secretRef: { name: incident-secrets }
+          env:
+            - name: ROLE
+              value: worker
+            - name: PG_MAX_CONNS
+              value: "16"
+          resources:
+            requests: { cpu: "500m", memory: "256Mi" }
+            limits: { cpu: "2", memory: "1Gi" }

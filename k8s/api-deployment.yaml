@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: incident-api
+  namespace: incident-dashboard
+spec:
+  replicas: 6
+  selector:
+    matchLabels: { app: incident-api }
+  template:
+    metadata:
+      labels: { app: incident-api }
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/YOUR_ORG/incident-api:latest
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 8080 }]
+          envFrom:
+            - configMapRef: { name: incident-config }
+            - secretRef: { name: incident-secrets }
+          env:
+            - name: ROLE
+              value: api
+            - name: PG_MAX_CONNS
+              value: "32"
+          readinessProbe:
+            httpGet: { path: /readyz, port: 8080 }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            periodSeconds: 10
+          resources:
+            requests: { cpu: "500m", memory: "256Mi" }
+            limits: { cpu: "2", memory: "1Gi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: incident-dashboard
+spec:
+  selector: { app: incident-api }
+  ports:
+    - port: 8080
+      targetPort: 8080
